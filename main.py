@@ -1,6 +1,7 @@
-import os, sys, time, requests, datetime, shutil
+import os, sys, time, requests, datetime, shutil, platform
 from pathlib import Path
 from zipfile import ZipFile
+from datetime import datetime
 
 #Dictionary (Add more if you want)
 #In this dictionary I added some extra extensions and changed the name of an entry (python --> Code)
@@ -47,27 +48,59 @@ def download_file():
             for data in r:
                 local_file.write(data)
 
+
+def creation_date(path_to_file):
+    """
+    Try to get the date that a file was created, falling back to when it was
+    last modified if that isn't possible.
+    See http://stackoverflow.com/a/39501288/1709587 for explanation.
+    """
+    if platform.system() == 'Windows':
+        return os.path.getctime(path_to_file)
+    else:
+        stat = os.stat(path_to_file)
+        try:
+            return datetime.fromtimestamp(stat.st_birthtime)
+        except AttributeError:
+            # We're probably on Linux. No easy way to get creation dates here,
+            # so we'll settle for when its content was last modified.
+            return datetime.fromtimestamp(stat.st_mtime)
+
+def move_file_to_folder(sourceLocation: str, destinationLocation: str):
+    try:
+        os.mkdir(destinationLocation)
+        shutil.move(sourceLocation, destinationLocation)
+    except:
+        pass
+
+
 def sort_by_date():
     for entry in os.scandir():
         if entry.is_dir():
             folder = os.path.join(entry)
+            filesInFolder = os.listdir(folder)
+
+            for file in filesInFolder:
+                file_path = os.path.join(os.getcwd(), folder, file)
+                file_creation_date = creation_date(file_path)
+
+                print(file_path)
+                print(file_creation_date)
+                full_month_name_of_file = file_creation_date.strftime("%B")
+                
+                destionation_folder = os.path.join(os.getcwd(), folder, full_month_name_of_file)
+                move_file_to_folder(file_path, destionation_folder)
+
             print (folder, "\nnext")
     scan = os.scandir(folder)
     print(scan)
-    #for entry in folder:
-    #    print(entry)
-        #file_time = os.path.getmtime(file)
-        #file_mtime = time.strftime("%m", time.localtime(file_time))
-        #if file_mtime == "05":
-        #    os.mkdir("May")
-        #    shutil.move(file, "May")
 
 
 #This will organise your files
 def main():
 
     for entry in os.scandir():
-        print("Current dir", entry.name);
+        print("Current dir", entry.name)
         if entry.is_dir():
             continue
         file_path = Path(entry.name)
@@ -91,4 +124,6 @@ def main():
             pass
 
 if __name__ == "__main__":
+    download_file()
+    main()
     sort_by_date()
